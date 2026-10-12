@@ -2,11 +2,9 @@ import numpy as np
 from typing import List, Dict, Any
 import json
 import os
+import re
 
 from groq import Groq
-
-_groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
-
 
 def detect_dropout_cliffs(chunk_stats: List[Dict[str, Any]], cliff_threshold: float = 10.0) -> List[Dict[str, Any]]:
     cliffs = []
@@ -52,6 +50,9 @@ def generate_fix_suggestions(cliffs: List[Dict[str, Any]]) -> List[Dict[str, Any
         }
 
         try:
+            api_key = os.environ.get("GROQ_API_KEY")
+            if not api_key:
+                raise ValueError("Rewriting is not configured")
             concepts_str = ', '.join(cliff['key_concepts']) if cliff['key_concepts'] else 'unknown'
             prompt = (
                 f"You are an expert instructional designer. A lesson chunk caused a dropout cliff.\n\n"
@@ -64,18 +65,26 @@ def generate_fix_suggestions(cliffs: List[Dict[str, Any]]) -> List[Dict[str, Any
                 f"\"changes_made\":\"...\",\"predicted_recovery_pct\":number}}"
             )
 
-            response = _groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                max_tokens=512,
-                temperature=0.4,
-                messages=[{"role": "user", "content": prompt}],
-            )
+            with Groq(api_key=api_key, timeout=20) as client:
+                response = client.chat.completions.create(
+                    model="openai/gpt-oss-120b",
+                    max_completion_tokens=2048,
+                    reasoning_effort="low",
+                    temperature=0.4,
+                    messages=[{"role": "user", "content": prompt}],
+                )
 
-            raw = response.choices[0].message.content.strip()
-            raw = raw.lstrip("```json").lstrip("```").rstrip("```").strip()
+            raw = (response.choices[0].message.content or "").strip()
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
             fix_data = json.loads(raw)
+            if not isinstance(fix_data, dict) or not all(key in fix_data for key in fallback):
+                raise ValueError("Incomplete rewrite")
+            fix_data = {key: fix_data[key] for key in fallback}
+            source = "model"
         except Exception:
             fix_data = fallback
+            source = "template"
 
         fixes.append({
             "chunk_index": cliff["chunk_index"],
@@ -83,6 +92,7 @@ def generate_fix_suggestions(cliffs: List[Dict[str, Any]]) -> List[Dict[str, Any
             "lost_pct": cliff["lost_pct"],
             "spike": cliff["spike"],
             **fix_data,
+            "suggestion_source": source,
         })
 
     return fixes

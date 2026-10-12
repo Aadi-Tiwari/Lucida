@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-anthropic
+groq>=1.7.0
 numpy
 scipy
 pydantic

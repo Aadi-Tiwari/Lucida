@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 import uvicorn
 import numpy as np
@@ -37,8 +37,15 @@ app.add_middleware(
 # ─── Request / Response Models ────────────────────────────────────────────────
 
 class SimulateRequest(BaseModel):
-    lesson_text: str
-    n_students: Optional[int] = 500
+    lesson_text: str = Field(min_length=1)
+    n_students: int = Field(default=500, ge=1, le=2000)
+
+    @field_validator("lesson_text")
+    @classmethod
+    def require_lesson(cls, text: str) -> str:
+        if not text.strip():
+            raise ValueError("Lesson text must not be blank")
+        return text
 
 class SimulateResponse(BaseModel):
     success: bool
@@ -53,7 +60,7 @@ def health_check():
 
 
 @app.post("/simulate", response_model=SimulateResponse)
-async def simulate(request: SimulateRequest):
+def simulate(request: SimulateRequest):
     """
     Full pipeline:
     1. Parse lesson into chunks (Person A's parse_lesson)
@@ -84,7 +91,7 @@ async def simulate(request: SimulateRequest):
 
 
 @app.post("/simulate/chunks-only")
-async def simulate_from_chunks(payload: dict):
+def simulate_from_chunks(payload: dict):
     """
     Accepts Person A's handoff JSON directly.
     Adapts Person A's schema to Person B's internal format before simulation.
@@ -132,8 +139,10 @@ async def simulate_from_chunks(payload: dict):
 
         return {"success": True, "results": analysis}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except (KeyError, TypeError, ValueError) as e:
+        raise HTTPException(status_code=422, detail=f"Invalid simulation handoff: {e}")
 
 
 # ─── TEMP: Mock Person A output for independent testing ───────────────────────

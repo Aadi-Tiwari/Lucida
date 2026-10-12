@@ -29,31 +29,40 @@ def parse_lesson(text: str) -> List[Dict[str, Any]]:
     client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        max_tokens=4096,
+        model="openai/gpt-oss-120b",
+        max_completion_tokens=8192,
+        reasoning_effort="low",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Parse this lesson into concept chunks:\n\n{text}"},
         ],
     )
 
-    raw = response.choices[0].message.content.strip()
+    raw = (response.choices[0].message.content or "").strip()
 
     # Strip markdown code fences if the model wraps them anyway
     raw = re.sub(r"^```(?:json)?\s*", "", raw)
     raw = re.sub(r"\s*```$", "", raw)
 
     chunks = json.loads(raw)
+    if not isinstance(chunks, list):
+        raise ValueError("Expected a list of lesson chunks")
 
     # Validate basic structure
     for i, chunk in enumerate(chunks):
+        if not isinstance(chunk, dict):
+            raise ValueError(f"Chunk {i} must be an object")
         if "order" not in chunk:
             chunk["order"] = i + 1
-        if "text" not in chunk:
-            raise ValueError(f"Chunk {i} missing 'text' field")
+        if not isinstance(chunk.get("text"), str) or not chunk["text"].strip():
+            raise ValueError(f"Chunk {i} needs non-empty text")
         if "concepts" not in chunk:
             chunk["concepts"] = []
         if "prerequisites" not in chunk:
             chunk["prerequisites"] = []
+        for field in ("concepts", "prerequisites"):
+            if not isinstance(chunk[field], list) or not all(isinstance(item, str) for item in chunk[field]):
+                raise ValueError(f"Chunk {i} {field} must be a list of strings")
+        chunk["order"] = i + 1
 
     return chunks

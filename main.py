@@ -28,12 +28,12 @@ async def health():
 
 
 @app.post("/parse-lesson", response_model=HandoffResponse)
-async def parse_lesson_endpoint(request: ParseLessonRequest):
+def parse_lesson_endpoint(request: ParseLessonRequest):
     # Validate required env vars early
     if not os.environ.get("GROQ_API_KEY"):
         raise HTTPException(status_code=500, detail="Missing environment variable: GROQ_API_KEY")
 
-    # Step 1 - parse lesson into concept chunks via llama-3.3-70b-versatile
+    # Step 1 - parse lesson into concept chunks via openai/gpt-oss-120b
     try:
         raw_chunks = parse_lesson(request.text)
     except Exception as exc:
@@ -46,6 +46,10 @@ async def parse_lesson_endpoint(request: ParseLessonRequest):
     try:
         chunk_texts = [chunk["text"] for chunk in raw_chunks]
         embeddings = embed_texts(chunk_texts)
+        if len(embeddings) != len(raw_chunks) or not embeddings or not embeddings[0]:
+            raise ValueError("Embedding count does not match the lesson chunks")
+        if any(len(embedding) != len(embeddings[0]) for embedding in embeddings):
+            raise ValueError("Embedding dimensions do not match")
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Embedding failed: {exc}")
 

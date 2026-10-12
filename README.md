@@ -1,43 +1,68 @@
-# Lucida - Lesson Clarity Engine
+# Lucida
 
-Lucida parses a lesson (pasted text or an uploaded PDF/DOCX) into ordered concept chunks with a Groq LLM, embeds them with sentence-transformers, and generates a synthetic student population to simulate how well the lesson lands. Built as a two-person hackathon project: this repo holds the lesson-parsing backend and the browser frontend; `person_b/` holds the companion comprehension-simulation service.
+Explore how lesson structure might affect a synthetic classroom, with a browser demonstration and separate Python services for parsing and simulation.
 
-## Structure
+## Choose a path
 
-```
-Lucida/
-├── main.py               # FastAPI backend: GET /health, POST /parse-lesson
-├── lesson_parser.py      # Groq LLM lesson -> concept chunks
-├── embedder.py           # sentence-transformers embeddings
-├── student_generator.py  # synthetic student population
-├── models.py             # Pydantic request/response models
-├── index.html            # Single-file frontend (open directly in a browser)
-├── config.example.js     # Template for frontend API key config
-└── person_b/             # Companion simulation service (separate FastAPI app)
-```
+| Path | What it actually runs |
+| --- | --- |
+| Browser demo (`index.html`) | Sentence splitting, heuristic concepts, randomized personality traces, and templated suggestions |
+| Parsing API (`main.py`) | Groq concept extraction, local sentence embeddings, and synthetic student generation |
+| Simulation API (`person_b/socraticsem-main/`) | Numerical simulation and analysis of a supplied handoff; its `/simulate` endpoint currently uses mock parsing |
 
-## Setup
+The browser demo does not call the Python analysis services. Its scores are illustrative, not measured student outcomes or validated dropout predictions. It shows a representative trace for each personality rather than simulating every displayed student independently.
 
-### Backend
+## Browser demo
 
-```bash
-pip install -r requirements.txt
-export GROQ_API_KEY=your_key_here   # PowerShell: $env:GROQ_API_KEY="your_key_here"
-uvicorn main:app --reload --port 8000
+Copy `config.example.js` to `config.js`, leaving the key blank for text and document input. Then serve the root:
+
+```sh
+python -m http.server 8080 --bind 127.0.0.1
 ```
 
-### Frontend
+Open <http://127.0.0.1:8080>. Paste a lesson or upload a text document. Charting and document readers load from public CDNs. Image text extraction is not implemented.
 
-The frontend calls Groq directly from the browser and reads its key from a gitignored `config.js`:
+Audio transcription calls Groq from the browser and requires a key in the local, gitignored `config.js`. That key is visible to the browser. Do not publish a configured file or use this path as a shared hosted service. A hosted transcription feature needs a server-side credential boundary.
 
-```bash
-cp config.example.js config.js
-# then paste your Groq API key into config.js
+## Parsing API
+
+Use Python 3.11:
+
+```sh
+python -m venv .venv
 ```
 
-Open `index.html` in a browser. Never commit `config.js`.
+Activate the environment, then install and start:
 
-## API
+```sh
+python -m pip install -r requirements-dev.txt
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
 
-- `GET /health` - status check
-- `POST /parse-lesson` - lesson text in, ordered concept chunks + embeddings + student handoff out
+Set `GROQ_API_KEY` in the process environment before starting. This API does not automatically load `.env`. `GET /health` checks the process. `POST /parse-lesson` accepts:
+
+```json
+{"text": "Mass is the amount of matter in an object.", "num_students": 100}
+```
+
+The response contains `chunks`, `students`, and `personality_modifiers`. Chunks include sequential order, concepts, prerequisites, and embedding vectors. The embedding model is downloaded on first use. Blank lessons and student counts outside the interface bounds are rejected.
+
+## Simulation API
+
+Install `person_b/socraticsem-main/requirements.txt` in an environment, change to that directory, and run:
+
+```sh
+python -m uvicorn main:app --host 127.0.0.1 --port 8001
+```
+
+Send the parsing API's handoff to `POST /simulate/chunks-only`. The separate `POST /simulate` endpoint accepts `lesson_text` and `n_students`, but generates mock concept vectors. Optional rewrite suggestions use `GROQ_API_KEY` from the process environment. Without a key, the response identifies template suggestions with `suggestion_source: "template"`. Neither endpoint establishes predictive validity for real classrooms.
+
+## Checks
+
+With the root virtual environment active:
+
+```sh
+python -m pytest -q
+```
+
+The tests validate lesson input, provider-response structure, embedding shape, and the parser-to-simulator handoff without calling Groq. Live provider behavior, model downloads, and educational validity need separate evaluation.
