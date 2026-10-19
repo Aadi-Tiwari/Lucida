@@ -9,7 +9,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="config.js"></script>
+  <script>
+    window.__LUCIDA_CONFIG = {};
+    if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname) && new URLSearchParams(location.search).get("config") === "local") {
+      document.write('<script src="config.js"><\/script>');
+    }
+  </script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     :root{
@@ -213,12 +218,12 @@
 <!-- NAV -->
 <div class="nav">
   <div class="nav-in">
-    <a class="nl" onclick="go('home')"><span class="nl-t">Lucida</span><div class="nl-sep"></div><span class="nl-s">Clarity Engine</span></a>
+    <a class="nl" href="#pg-home" onclick="go('home')"><span class="nl-t">Lucida</span><div class="nl-sep"></div><span class="nl-s">Clarity Engine</span></a>
     <div class="nls">
-      <a class="nla on" data-n="home" onclick="go('home')">Home</a>
-      <a class="nla" data-n="text" onclick="go('text')">Text</a>
-      <a class="nla" data-n="upload" onclick="go('upload')">Upload</a>
-      <a class="nla" data-n="record" onclick="go('record')">Record</a>
+      <a class="nla on" data-n="home" href="#pg-home" onclick="go('home')">Home</a>
+      <a class="nla" data-n="text" href="#pg-text" onclick="go('text')">Text</a>
+      <a class="nla" data-n="upload" href="#pg-upload" onclick="go('upload')">Upload</a>
+      <a class="nla" data-n="record" href="#pg-record" onclick="go('record')">Record</a>
     </div>
   </div>
 </div>
@@ -235,22 +240,22 @@
   </div>
 
   <div class="mc3 fadeUp2">
-    <div class="mc" onclick="go('text')">
+    <div class="mc" role="button" tabindex="0" onclick="go('text')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('text');}">
       <div class="top"><div class="ico">T</div><div class="tag">Paste & Analyze</div></div>
       <h3>Text Input</h3>
-      <p>Paste or type any lesson - lecture notes, textbook passages, slide decks. Get instant comprehension analysis.</p>
+      <p>Paste or type any lesson - lecture notes, textbook passages, slide decks. Explore an illustrative lesson report.</p>
       <div class="arr">Open &rarr;</div>
     </div>
-    <div class="mc" onclick="go('upload')">
+    <div class="mc" role="button" tabindex="0" onclick="go('upload')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('upload');}">
       <div class="top"><div class="ico">+</div><div class="tag">Upload & Extract</div></div>
       <h3>Upload File</h3>
-      <p>Drop a PDF, PPTX, DOCX, image, or audio/video. Auto-extracted and transcribed instantly.</p>
+      <p>Extract text from PDF, PPTX, DOCX, or TXT files. Audio and video transcription require optional local Groq configuration; image extraction is unavailable.</p>
       <div class="arr">Open &rarr;</div>
     </div>
-    <div class="mc" onclick="go('record')">
+    <div class="mc" role="button" tabindex="0" onclick="go('record')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('record');}">
       <div class="top"><div class="ico" style="color:#f87171;">&#9679;</div><div class="tag">Live Capture</div></div>
       <h3>Record</h3>
-      <p>Record a practice lecture directly from your mic. Transcribed and analyzed the moment you stop.</p>
+      <p>Record a practice lecture from your mic. Transcription requires optional local Groq configuration; text input works without it.</p>
       <div class="arr">Open &rarr;</div>
     </div>
   </div>
@@ -286,7 +291,7 @@
   <button class="btn-back" onclick="go('home')">&#8592; Back</button>
   <div class="cg fadeUp">
     <div class="st"><div class="d de"></div>Upload File</div>
-    <p style="font-size:0.85rem;color:var(--txD);margin-bottom:1.25rem;line-height:1.7;font-weight:300;">Upload any document or media file. Text will be extracted from documents, audio/video will be transcribed automatically.</p>
+    <p style="font-size:0.85rem;color:var(--txD);margin-bottom:1.25rem;line-height:1.7;font-weight:300;">Extract text from supported documents. Audio and video transcription require optional local Groq configuration. Image extraction is unavailable.</p>
     <div class="uz" id="uz"><input type="file" id="fi" accept=".pdf,.pptx,.docx,.txt,.png,.jpg,.jpeg,.mp4,.mov,.webm,.mp3,.wav,.m4a,.ogg" /><div class="uz-ico">+</div><div class="uz-t">Drop a file or click to upload</div><div class="uz-s">PDF - PPTX - DOCX - TXT - PNG - JPG<br>MP4 - MOV - WEBM - MP3 - WAV - M4A - OGG</div></div>
     <div id="fpw"></div><div id="mpv" class="mp hidden"></div>
     <div class="ctrls"><label>Students: <input type="number" id="nSU" value="500" min="1" max="2000" /></label><button class="btn btn-em" id="aBtn" onclick="runSim('upload')" disabled>Analyze</button><span class="status" id="uSt"></span></div>
@@ -299,8 +304,8 @@
   <button class="btn-back" onclick="go('home')">&#8592; Back</button>
   <div class="cg fadeUp">
     <div class="st"><div class="d de"></div>Record Lecture</div>
-    <p style="font-size:0.85rem;color:var(--txD);margin-bottom:1.25rem;line-height:1.7;font-weight:300;">Click the record button to capture a practice lecture. When you stop, it will be transcribed and analyzed instantly.</p>
-    <div class="rr"><button class="rb" id="recB" onclick="toggleRec()"><div class="d2"></div></button><span class="rt" id="recT">00:00</span><div class="lw"><canvas id="lwc"></canvas></div></div>
+    <p style="font-size:0.85rem;color:var(--txD);margin-bottom:1.25rem;line-height:1.7;font-weight:300;">Record a practice lecture with your microphone. Transcription requires optional local Groq configuration; you can use text input without a key.</p>
+    <div class="rr"><button class="rb" id="recB" aria-label="Start or stop recording" onclick="toggleRec()"><div class="d2"></div></button><span class="rt" id="recT">00:00</span><div class="lw"><canvas id="lwc"></canvas></div></div>
     <div id="rpw" style="margin-top:0.5rem;"></div><div id="rmpv" class="mp hidden"></div>
     <div class="ctrls"><label>Students: <input type="number" id="nSR" value="500" min="1" max="2000" /></label><button class="btn btn-em" id="arBtn" onclick="runSim('record')" disabled>Analyze Recording</button><span class="status" id="rSt"></span></div>
     <div id="lb3" class="lb hidden"><div class="f"></div></div>
@@ -356,7 +361,16 @@ const GK=(window.__LUCIDA_CONFIG&&window.__LUCIDA_CONFIG.GROQ_API_KEY)||'';
 let dCI=null,pCI=null,cFile=null,cType=null,aEl=null,mR=null,rCh=[],isR=false,rSt=0,rTI=null,lA=null,lAF=null,lS=null,rF=null,lR=null,aCR=null;
 
 // NAV
-function go(p){['home','text','upload','record','results'].forEach(x=>document.getElementById('pg-'+x).classList.add('hidden'));document.getElementById('pg-'+p).classList.remove('hidden');document.querySelectorAll('.nla').forEach(a=>a.classList.toggle('on',a.dataset.n===p));scrollTo({top:0,behavior:'smooth'});}
+function go(p){
+  if(!['home','text','upload','record','results'].includes(p))p='home';
+  if(p==='results'&&!lR)p='text';
+  ['home','text','upload','record','results'].forEach(x=>document.getElementById('pg-'+x).classList.toggle('hidden',x!==p));
+  document.querySelectorAll('.nla').forEach(a=>a.classList.toggle('on',a.dataset.n===p));
+  const hash='#pg-'+p;if(location.hash!==hash)history.pushState(null,'',hash);
+  scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+}
+addEventListener('hashchange',()=>go(location.hash.replace('#pg-','')));
+if(location.hash.startsWith('#pg-'))go(location.hash.slice(4));
 function srt(t){document.querySelectorAll('.rtb').forEach(b=>b.classList.toggle('on',b.dataset.r===t));document.querySelectorAll('.rtc').forEach(c=>c.classList.add('hidden'));document.getElementById('rt-'+t).classList.remove('hidden');}
 function sl(id){document.getElementById(id).classList.remove('hidden');}function hl(id){document.getElementById(id).classList.add('hidden');}
 function ss(id,m,t){const e=document.getElementById(id);e.className='status '+(t||'');e.textContent=m;}
@@ -393,8 +407,8 @@ function rDashFeats(d,avg){
   let hc='-',hp=0;dp.forEach((v,i)=>{if(v>hp){hp=v;hc=(ch[i]?.concepts?.[0])||('Chunk '+(i+1));}});
   const lc=dp.length?ch[dp.indexOf(Math.min(...dp))]?.concepts?.[0]||'First chunk':'N/A';
   const h='<div class="feat"><div class="feat-ico" style="color:var(--gd);">&#128200;</div><h4>Avg Dropout: '+avg+'%</h4><p>Across '+ch.length+' chunks, the average student disengagement rate is '+avg+'%. '+(avg>40?'This is high - restructuring is recommended.':'This is within acceptable range.')+'</p></div>'+
-  '<div class="feat"><div class="feat-ico" style="color:var(--red);">&#9888;</div><h4>Highest Risk: '+esc(hc)+'</h4><p>This chunk reaches '+hp+'% dropout - the most dangerous point in your lesson. Consider adding scaffolding or a bridge concept before it.</p></div>'+
-  '<div class="feat"><div class="feat-ico" style="color:var(--grn);">&#10003;</div><h4>Strongest: '+esc(lc)+'</h4><p>Students stay most engaged here. Use this section as a model for how to structure other parts of your lesson.</p></div>'+
+  '<div class="feat"><div class="feat-ico" style="color:var(--red);">&#9888;</div><h4>Highest Risk: '+esc(hc)+'</h4><p>This chunk reaches '+hp+'% dropout - the highest illustrative value in this run. This is not a measured student outcome.</p></div>'+
+  '<div class="feat"><div class="feat-ico" style="color:var(--grn);">&#10003;</div><h4>Strongest: '+esc(lc)+'</h4><p>This chunk has the lowest illustrative dropout in this run. Randomized scores do not establish which lesson structure works best.</p></div>'+
   '<div class="feat"><div class="feat-ico">&#128101;</div><h4>5 Personality Types</h4><p>Curious, Distracted, Anxious, Overconfident, and Average learners each react differently. Check the Students tab for per-type breakdown.</p></div>';
   document.getElementById('dashFeats').innerHTML=h;
 }
@@ -407,7 +421,7 @@ function rCF(ch){const c=document.getElementById('cfm');if(!ch.length){c.innerHT
 function rSB(st){const c=document.getElementById('avcs');if(!st.length){c.innerHTML='';return;}const pe={curious:'\uD83E\uDDD0',distracted:'\uD83D\uDE34',anxious:'\uD83D\uDE30',overconfident:'\uD83D\uDE0E',average:'\uD83D\uDE42'};const re={engaged:'\uD83D\uDE0A',drifting:'\uD83D\uDE10',confused:'\uD83D\uDE15',lost:'\uD83D\uDE34'};c.innerHTML=st.map(s=>{const em=pe[s.personality]||'\uD83D\uDE42';const eng=s.overallEngagement||70;const ec=eng>70?'var(--grn)':eng>45?'var(--amb)':'var(--red)';let strip='';if(s.dropout_pct_per_chunk)strip=s.dropout_pct_per_chunk.map((p,i)=>{const r=p>60?'lost':p>35?'confused':p>15?'drifting':'engaged';return'<span class="rxc" title="Chunk '+(i+1)+': '+p+'%">'+(re[r]||'\uD83D\uDE0A')+'</span>';}).join('');return'<div class="av"><div class="avem">'+em+'</div><div class="avid">'+esc(s.id)+'</div><div class="avp">'+esc(s.personality)+'</div>'+(strip?'<div class="avs">'+strip+'</div>':'')+'<div class="ave" style="color:'+ec+'">'+eng+'%</div>'+(s.firstLostAt!=null?'<div class="avl">Lost at chunk '+s.firstLostAt+'</div>':'<div class="avl" style="color:var(--grn)">Never lost</div>')+'</div>';}).join('');}
 function rTR(d,ch,avg){const c=document.getElementById('rpco');let h='';if(d.overallSummary)h+='<div class="rps"><h3>Overall</h3><p style="font-size:0.88rem;line-height:1.75;color:var(--txM);font-weight:300;">'+esc(d.overallSummary)+'</p></div>';h+='<div class="rps"><h3>Stats</h3><ul class="rpl"><li>Chunks: '+ch.length+'</li><li>Avg dropout: '+avg+'%</li></ul></div>';function rl(t,items){if(!items?.length)return'';return'<div class="rps"><h3>'+t+'</h3><ul class="rpl">'+items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul></div>';}h+=rl('Key Concepts',d.keyConcepts);h+=rl('Questions',d.questionsAsked);h+=rl('Engagement Moments',d.engagementMoments);h+=rl('Missed Opportunities',d.missedOpportunities);if(d.chunkNotes){h+='<div class="rps"><h3>Chunk Notes</h3>';d.chunkNotes.forEach(cn=>{const rc=cn.risk==='high'?'var(--red)':cn.risk==='med'?'var(--amb)':'var(--grn)';h+='<div style="margin-bottom:0.45rem;padding:0.45rem 0.75rem;border-left:3px solid '+rc+';background:rgba(5,10,8,0.35);border-radius:0 8px 8px 0;"><strong style="color:'+rc+';">Chunk '+cn.chunk+'</strong> <span style="color:var(--txM);">'+esc(cn.note)+'</span></div>';});h+='</div>';}c.innerHTML=h||'<p style="color:var(--txD)">No data.</p>';}
 
-function rRO(d){const ch=d.chunks||[],dp=d.dropoutPerChunk||[];let h='';const hr=ch.filter((_,i)=>(dp[i]||0)>35);if(hr.length){h+='<p style="font-size:0.85rem;color:var(--txM);margin-bottom:0.85rem;font-weight:300;">'+hr.length+' high-risk chunk(s) detected. Suggested bridges:</p>';hr.forEach(c=>{const i=(c.order||1)-1;h+='<div class="bc"><div class="blb">Bridge before Chunk '+(i+2)+'</div>Before introducing "'+esc((ch[i+1]||c).concepts[0]||'next')+'", add a brief review connecting it to "'+esc(c.concepts[0]||'previous')+'" with a concrete example.</div>';});}else h+='<p style="font-size:0.85rem;color:var(--txD);font-weight:300;">Well-structured. No bridges needed.</p>';document.getElementById('roc').innerHTML=h;
+function rRO(d){const ch=d.chunks||[],dp=d.dropoutPerChunk||[];let h='';const hr=ch.filter((_,i)=>(dp[i]||0)>35);if(hr.length){h+='<p style="font-size:0.85rem;color:var(--txM);margin-bottom:0.85rem;font-weight:300;">'+hr.length+' high-risk chunk(s) detected. Suggested bridges:</p>';hr.forEach(c=>{const i=(c.order||1)-1;const previous=ch[i-1]?.concepts[0];h+='<div class="bc"><div class="blb">Bridge before Chunk '+(i+1)+'</div>Before introducing "'+esc(c.concepts[0]||'this concept')+'", '+(previous?'review its connection to "'+esc(previous)+'"':'introduce its prerequisite ideas')+' with a concrete example.</div>';});}else h+='<p style="font-size:0.85rem;color:var(--txD);font-weight:300;">Well-structured. No bridges needed.</p>';document.getElementById('roc').innerHTML=h;
   let th='<table><thead><tr><th style="width:45px">#</th><th style="width:35%">Text</th><th>Concepts</th><th>Prerequisites</th></tr></thead><tbody>';const sorted=[...ch].sort((a,b)=>(dp[(a.order||1)-1]||0)-(dp[(b.order||1)-1]||0));sorted.forEach((c,n)=>{const i=(c.order||1)-1;if(dp[i]>35)th+='<tr><td></td><td colspan="3"><div class="bc"><div class="blb">Bridge</div>Review "'+esc(c.concepts[0]||'concept')+'"</div></td></tr>';th+='<tr><td><span class="onum">'+(n+1)+'</span></td><td>'+esc(c.text)+'</td><td>'+(c.concepts||[]).map(x=>'<span class="badge">'+esc(x)+'</span>').join(' ')+'</td><td>'+((c.prerequisites||[]).length?c.prerequisites.map(x=>'<span class="badge pr">'+esc(x)+'</span>').join(' '):'<span style="color:var(--txD)">none</span>')+'</td></tr>';});th+='</tbody></table>';document.getElementById('cov').innerHTML=th;}
 function rCL(d){const dp=d.dropoutPerChunk||[],pc=d.personalityCounts||{},total=Object.values(pc).reduce((a,b)=>a+b,0);const cls=[{label:'Early Dropouts',personalities:['distracted','anxious'],dropChunk:Math.min(2,dp.length),intervention:'Add hooks and scaffolding early'},{label:'Mid-Lesson Drift',personalities:['average','overconfident'],dropChunk:Math.ceil(dp.length/2),intervention:'Insert check-for-understanding questions'},{label:'Steady Learners',personalities:['curious'],dropChunk:dp.length,intervention:'Provide extension challenges'}];cls.forEach(cl=>{cl.count=cl.personalities.reduce((sum,p)=>sum+(pc[p]||0),0);cl.pct=total?Math.round(cl.count/total*100):0;});aCR={clusters:cls};let h='<div class="clr">';cls.forEach((cl,i)=>{const sv=cl.pct>60?'sh':cl.pct>40?'sm':'sl2';h+='<div class="clc '+sv+'" onclick="fcl('+i+')" data-ci="'+i+'"><div class="cll">'+esc(cl.label)+'</div><div class="cls">'+cl.count+' ('+cl.pct+'%)</div><div class="cls">Drop-off: Chunk '+cl.dropChunk+'</div><div class="clt">'+esc(cl.intervention)+'</div></div>';});h+='</div>';document.getElementById('clco').innerHTML=h;}
 function rDF(d){const ch=d.chunks||[],dp=d.dropoutPerChunk||[];const pc=ch.filter((_,i)=>(dp[i]||0)>40);if(!pc.length){document.getElementById('dfc').innerHTML='<p style="font-size:0.85rem;color:var(--txD);font-weight:300;">No chunks exceed 40% dropout.</p>';return;}let h='';pc.forEach((c,idx)=>{const dd=dp[(c.order||1)-1]||0;const u='d'+idx;const t=c.text||'';const si=t.replace(/\b\w{8,}\b/g,m=>m.slice(0,5)+'...');const an='Think of it this way: '+t.split('.')[0]+' works like a recipe - you need all ingredients first.';const ex='For example: '+t.split('.')[0]+'. In everyday life, this is like...';h+='<div class="cex"><div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.3rem;"><span class="onum">'+(c.order||'?')+'</span><span style="font-size:0.8rem;color:#fca5a5;">'+dd+'%</span><button class="cexb" onclick="td(\''+u+'\')"><span id="'+u+'a">&#9654;</span> Versions</button></div><div id="'+u+'" class="hidden" style="margin-top:0.4rem;"><div class="vts" id="'+u+'t"><button class="vtb on" onclick="sv(\''+u+'\',\'s\')">A: Simplified</button><button class="vtb" onclick="sv(\''+u+'\',\'a\')">B: Analogy</button><button class="vtb" onclick="sv(\''+u+'\',\'e\')">C: Examples</button></div><div class="vtx" id="'+u+'x">'+esc(si)+'</div><div class="vbf"><strong>Best for:</strong> A: distracted, average | B: anxious | C: curious, overconfident</div></div></div>';setTimeout(()=>{const el=document.getElementById(u);if(el)el._d={s:si,a:an,e:ex};},0);});document.getElementById('dfc').innerHTML=h;}

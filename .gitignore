@@ -10,3 +10,5 @@ config.js
 
 .venv/
 .pytest_cache/
+dist/
+.vercel/

@@ -14,7 +14,7 @@ The browser demo does not call the Python analysis services. Its scores are illu
 
 ## Browser demo
 
-Copy `config.example.js` to `config.js`, leaving the key blank for text and document input. Then serve the root:
+Text and document input need no configuration file. Serve the root:
 
 ```sh
 python -m http.server 8080 --bind 127.0.0.1
@@ -22,7 +22,9 @@ python -m http.server 8080 --bind 127.0.0.1
 
 Open <http://127.0.0.1:8080>. Paste a lesson or upload a text document. Charting and document readers load from public CDNs. Image text extraction is not implemented.
 
-Audio transcription calls Groq from the browser and requires a key in the local, gitignored `config.js`. That key is visible to the browser. Do not publish a configured file or use this path as a shared hosted service. A hosted transcription feature needs a server-side credential boundary.
+For optional local audio transcription, copy `config.example.js` to the ignored `config.js`, configure your Groq key, and open `http://127.0.0.1:8080/?config=local`. Only loopback pages load that explicitly requested configuration. The key is visible to your browser. Do not publish it or use this path as a shared hosted service. A hosted transcription feature needs a server-side credential boundary.
+
+The Vercel configuration publishes the static browser demo, not the Python ML service. `node scripts/build-static.mjs` copies the page into `dist/` and writes an empty public configuration. It never copies your private `config.js`. The Python service remains a separate local application; its model dependencies exceed a serverless function bundle.
 
 ## Parsing API
 
@@ -68,6 +70,12 @@ python -m pytest -q
 ```
 
 The tests validate lesson input, provider-response structure, embedding shape, and the parser-to-simulator handoff without calling Groq. Live provider behavior, model downloads, and educational validity need separate evaluation.
+
+Run the browser-script syntax and lesson-bridge regression checks with Node:
+
+```sh
+node --test tests/browser.test.mjs
+```
 
 ## License
 
