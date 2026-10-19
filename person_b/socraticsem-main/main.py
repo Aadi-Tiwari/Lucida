@@ -12,15 +12,17 @@ from analyzer import analyze_results
 def _l2_normalize(vec: list) -> list:
     """L2-normalize a vector onto the unit sphere."""
     a = np.array(vec, dtype=float)
+    if a.ndim != 1 or not a.size or not np.isfinite(a).all():
+        raise ValueError("Vectors must be nonempty, finite, one-dimensional arrays")
     n = np.linalg.norm(a)
+    if not np.isfinite(n):
+        raise ValueError("Vector magnitude is too large")
     return (a / n).tolist() if n > 0 else a.tolist()
 
 
 def _abs_normalize(vec: list) -> list:
     """Take absolute values then L2-normalize (maps mixed-sign embeddings to positive unit sphere)."""
-    a = np.abs(np.array(vec, dtype=float))
-    n = np.linalg.norm(a)
-    return (a / n).tolist() if n > 0 else a.tolist()
+    return _l2_normalize(np.abs(np.array(vec, dtype=float)))
 
 app = FastAPI(title="Lucida API", version="1.0.0")
 
@@ -104,6 +106,12 @@ def simulate_from_chunks(payload: dict):
 
         if not raw_chunks or not raw_students:
             raise HTTPException(status_code=400, detail="chunks and students required")
+        if (not isinstance(raw_chunks, list) or not isinstance(raw_students, list)
+                or not all(isinstance(chunk, dict) for chunk in raw_chunks)
+                or not all(isinstance(student, dict) for student in raw_students)):
+            raise ValueError("chunks and students must be arrays of objects")
+        if len(raw_students) > 2000:
+            raise ValueError("At most 2000 students are supported")
 
         # ── Adapt Person A's chunk schema → Person B's expected format ──
         # Person A:  { order, text, concepts, prerequisites, embedding (384-dim, mixed-sign) }
@@ -133,6 +141,11 @@ def simulate_from_chunks(payload: dict):
             }
             for s in raw_students
         ]
+
+        dimensions = {len(chunk["concept_vector"]) for chunk in chunks}
+        dimensions.update(len(student["knowledge_vector"]) for student in students)
+        if len(dimensions) != 1:
+            raise ValueError("All chunk and student vectors must have the same dimension")
 
         simulation_results = run_simulation(chunks, students)
         analysis = analyze_results(simulation_results)

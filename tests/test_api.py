@@ -8,6 +8,31 @@ import main
 
 
 @pytest.fixture
+def simulation_client(monkeypatch):
+    directory = Path(__file__).resolve().parents[1] / "person_b" / "socraticsem-main"
+    monkeypatch.syspath_prepend(str(directory))
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    spec = importlib.util.spec_from_file_location("lucida_simulation_validation", directory / "main.py")
+    simulation = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(simulation)
+    with TestClient(simulation.app, raise_server_exceptions=False) as client:
+        yield client
+
+
+@pytest.mark.parametrize("chunks,students", [
+    ([None], [{"id": 1, "knowledge_vector": [1.0]}]),
+    ([{"text": "Mass is matter.", "embedding": []}], [{"id": 1, "knowledge_vector": []}]),
+    ([{"text": "Mass is matter.", "embedding": [[1.0]]}], [{"id": 1, "knowledge_vector": [[1.0]]}]),
+    ([{"text": "Mass is matter.", "embedding": [1e308, 1e308]}], [{"id": 1, "knowledge_vector": [1.0, 0.0]}]),
+    ([{"text": "Mass is matter.", "embedding": [1.0]}], [None]),
+    ([{"text": "Mass is matter.", "embedding": [1.0]}], [{"id": 1, "knowledge_vector": [1.0, 0.0]}]),
+])
+def test_invalid_handoffs_are_client_errors(simulation_client, chunks, students):
+    response = simulation_client.post("/simulate/chunks-only", json={"chunks": chunks, "students": students})
+    assert response.status_code == 422, response.text
+
+
+@pytest.fixture
 def parser_client(monkeypatch):
     monkeypatch.setenv("GROQ_API_KEY", "test-only")
     monkeypatch.setattr(main, "parse_lesson", lambda text: [

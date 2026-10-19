@@ -59,6 +59,8 @@ Send the parsing API's handoff to `POST /simulate/chunks-only`. The separate `PO
 
 ## Checks
 
+Simulation handoffs must contain arrays of chunk and student objects with nonempty, finite vectors of a consistent dimension. Invalid handoffs return a client error instead of silently producing scores from malformed vectors.
+
 With the root virtual environment active:
 
 ```sh
@@ -66,3 +68,7 @@ python -m pytest -q
 ```
 
 The tests validate lesson input, provider-response structure, embedding shape, and the parser-to-simulator handoff without calling Groq. Live provider behavior, model downloads, and educational validity need separate evaluation.
+
+## License
+
+Original project source is available under the [MIT License](LICENSE). Third-party dependencies, model weights, fonts, documents, and datasets retain their own licenses. This license does not grant rights to third-party assets.
